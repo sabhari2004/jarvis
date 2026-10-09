@@ -69,7 +69,7 @@ OLLAMA_MODEL = os.environ.get("JARVIS_LLM", "llama3.2:1b")   # e.g. export JARVI
 WHISPER_DEVICE = os.environ.get("JARVIS_DEVICE", "auto")     # auto | cuda | cpu
 WAKE_THRESHOLD = 0.5
 TURNS = 10                  # max back-and-forth turns per wake-up; silence or "stop" ends it sooner
-WHISPER_PROMPT = "Voice commands for a desktop assistant named Jarvis: open, play, YouTube, Tamil songs and movies, Telegram, Firefox."
+WHISPER_PROMPT = "Voice commands for a desktop assistant named Jarvis: open, play, YouTube, Tamil songs and movies, Minnale, Telegram, Firefox, W3Schools, Python, basics, search."
 MIN_SPEECH_RMS = 350        # raise if background noise keeps recording going, lower if your voice is missed
 MAX_SPEECH_RMS = 1500
 MPV_SOCK = "/tmp/jarvis-mpv.sock"
@@ -1411,7 +1411,7 @@ def handle_typing_command(window, norm, command):
 # ------------------------------------------------------------ web search ----
 WEB_TARGETS = {"browser", "web", "internet", "online", "google", "chrome", "firefox",
                "www", "engine", "page", "site", "search"}
-SEARCH_VERBS = {"search", "google", "browse"}
+SEARCH_VERBS = {"search", "google", "browse", "go"}
 
 
 def handle_web_search(window, norm):
@@ -2268,13 +2268,17 @@ def handle_theme_command(window, norm):
     verb_ok = bool(verbs & set(words[:6]))
     color_mention = bool(tokens & {"color", "colour", "colors", "colours", "theme"})
 
+    is_search = bool({"search", "google", "youtube", "play"} & tokens)
+    if is_search:
+        return False
+
     if names and (verb_ok or color_mention or len(words) <= 4):
         name = names[-1]
         apply_theme(name)
         respond(window, f"Color changed to {name}.", "Standby")
         return True
 
-    if verb_ok and (color_mention or target) and not names:
+    if verb_ok and color_mention and not names:
         respond(window, "Which color? I can do " + ", ".join(COLORS) + ".", "Listening...")
         return True
 
@@ -2682,7 +2686,7 @@ _COMMAND_STARTERS = {
     "open", "launch", "start", "close", "shut", "type", "search", "google",
     "browse", "play", "pause", "stop", "volume", "brightness", "set",
     "enable", "disable", "show", "hide", "run", "execute", "terminal",
-    "find", "where", "what", "who",
+    "find", "where", "what", "who", "go",
 }
 
 
@@ -2691,17 +2695,24 @@ def _split_compound_command(command):
     Only splits when the second part starts with a known command verb so we
     don't break normal sentences that happen to contain 'and'.
     """
-    parts = _COMPOUND_SPLITTERS.split(command.strip())
-    if len(parts) < 2:
+    matches = list(_COMPOUND_SPLITTERS.finditer(command.strip()))
+    if not matches:
         return [command]
-    result = [parts[0].strip()]
-    for part in parts[1:]:
-        first_word = normalize(part).split()[0] if part.strip() else ""
+    
+    result = []
+    last_end = 0
+    for match in matches:
+        part = command[last_end:match.start()].strip()
+        next_part = command[match.end():].strip()
+        first_word = normalize(next_part).split()[0] if next_part else ""
+        
         if first_word in _COMMAND_STARTERS:
-            result.append(part.strip())
-        else:
-            # Not a command verb — re-attach to the previous part
-            result[-1] = result[-1] + " " + part.strip()
+            # We split here
+            result.append(part)
+            last_end = match.end()
+            
+    # append the remainder
+    result.append(command[last_end:].strip())
     return [p for p in result if p]
 
 
