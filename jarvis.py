@@ -2698,6 +2698,17 @@ def _split_compound_command(command):
     return [p for p in result if p]
 
 
+def handle_hey_jarvis(window, norm):
+    if norm in ["hey jarvis", "hello jarvis", "hi jarvis", "jarvis", "jarvis you there", "are you there jarvis", "hey"]:
+        msg = "I'm here, buddy. What's up?" if current_personality() == "buddy" else "Yes, sir. I am online and ready."
+        respond(window, msg, "Standby")
+        chat_memory.append({"role": "user", "content": norm})
+        chat_memory.append({"role": "assistant", "content": msg})
+        mem_add_turn("user", norm)
+        mem_add_turn("assistant", msg)
+        return True
+    return False
+
 def _process_command(command, window):
     # ── Compound command handling ────────────────────────────────────────────
     # In Companion/Buddy mode, skip splitting. Treat "and then" naturally.
@@ -2724,6 +2735,9 @@ def _process_command(command, window):
         _os._exit(0)
 
     ui_message(window, "user", command)
+
+    if handle_hey_jarvis(window, norm):
+        return
 
     # 0) typing / dictation plugin (intercepts everything while it is on)
     if not _buddy and handle_typing_command(window, norm, command):
