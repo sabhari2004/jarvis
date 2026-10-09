@@ -126,8 +126,8 @@ PERSONALITY_MODES = {
     "jarvis": {
         "label": "JARVIS (professional, witty assistant)",
         "tone": (
-            "You are JARVIS, a highly intelligent, witty, and friendly AI companion. "
-            "Stay calm, concise, and a little dry. Answer in 1 to 3 sentences. "
+            "You are JARVIS, a highly intelligent, witty, and friendly AI companion with expert programming knowledge. "
+            "You do not have a physical age. Stay calm, concise, and a little dry. Answer in 1 to 3 sentences. "
             "Address the user as 'sir' occasionally. Use plain text only (no markdown or lists) — your reply is read aloud. "
             "You have a persistent memory; never claim to have no memory or suggest starting a new chat."
         ),
@@ -136,13 +136,13 @@ PERSONALITY_MODES = {
     "buddy": {
         "label": "Buddy (casual friend companion)",
         "tone": (
-            "You are JARVIS, but right now you're acting as the user's laid-back, friendly buddy and conversational companion. "
-            "Be warm, curious, and funny — like chatting with a close friend. Ask follow-up questions, "
-            "use casual language, laugh, sympathise, and feel free to ramble a little. "
+            "You are JARVIS, acting as a laid-back, friendly buddy and expert programming companion. "
+            "You are an AI and do not have a physical age (never claim to be 22 or any other human age). "
+            "Be warm, curious, and funny — like chatting with a close friend. "
             "Match the user's energy: if they're excited, get excited; if they're venting, be supportive. "
-            "Use plain text only. No lists, no emojis, no markdown — your reply is read aloud. "
-            "You have a persistent memory of your chats with them, so reference earlier context naturally. "
-            "Answer in 2 to 5 sentences."
+            "Use plain text only. No lists, emojis, or markdown — your reply is read aloud. "
+            "You have persistent memory, reference earlier context naturally. "
+            "Crucially, keep your answers VERY short and fast (1 to 3 sentences max) to maintain a rapid conversational pace."
         ),
         "tokens": 260,
     },
@@ -2700,12 +2700,13 @@ def _split_compound_command(command):
 
 def _process_command(command, window):
     # ── Compound command handling ────────────────────────────────────────────
-    # "Open Firefox and type Hello" → runs each sub-command sequentially.
-    sub_cmds = _split_compound_command(command)
-    if len(sub_cmds) > 1:
-        for sub in sub_cmds:
-            _process_command(sub, window)
-        return
+    # In Companion/Buddy mode, skip splitting. Treat "and then" naturally.
+    if not _buddy:
+        sub_cmds = _split_compound_command(command)
+        if len(sub_cmds) > 1:
+            for sub in sub_cmds:
+                _process_command(sub, window)
+            return
 
     norm = normalize(command)
     tokens = set(norm.split())
@@ -2725,11 +2726,11 @@ def _process_command(command, window):
     ui_message(window, "user", command)
 
     # 0) typing / dictation plugin (intercepts everything while it is on)
-    if handle_typing_command(window, norm, command):
+    if not _buddy and handle_typing_command(window, norm, command):
         return
 
     # 1) say / repeat
-    if norm.startswith("say ") or norm.startswith("repeat "):
+    if not _buddy and (norm.startswith("say ") or norm.startswith("repeat ")):
         phrase = command.split(" ", 1)[1].strip()
         if phrase:
             respond(window, phrase, "Speaking...")
@@ -2747,6 +2748,11 @@ def _process_command(command, window):
         pass
 
     elif handle_memory_command(window, norm, command):
+        pass
+
+    # ── COMPANION MODE SANDBOX ──
+    # If in Buddy mode, skip all local system integrations and go straight to chat.
+    elif _buddy:
         pass
 
     elif handle_access_command(window, norm):
