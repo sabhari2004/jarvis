@@ -2710,6 +2710,7 @@ def handle_hey_jarvis(window, norm):
     return False
 
 def _process_command(command, window):
+    _buddy = current_personality() == "buddy"
     # ── Compound command handling ────────────────────────────────────────────
     # In Companion/Buddy mode, skip splitting. Treat "and then" naturally.
     if not _buddy:
