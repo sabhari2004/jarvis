@@ -4,3 +4,5 @@ __pycache__/
 *.onnx.json
 .archify/
 .freebuff/
+venv/
+__pycache__/
