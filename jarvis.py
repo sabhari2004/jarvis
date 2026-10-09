@@ -2751,29 +2751,28 @@ def _process_command(command, window):
         pass
 
     # ── COMPANION MODE SANDBOX ──
-    # If in Buddy mode, skip all local system integrations and go straight to chat.
-    elif _buddy:
+    # In Buddy mode, we add `not _buddy` to local system commands to skip them
+    # and fall straight through to the chat logic at the end.
+
+    elif not _buddy and handle_access_command(window, norm):
         pass
 
-    elif handle_access_command(window, norm):
+    elif not _buddy and handle_shell_command(window, command):
         pass
 
-    elif handle_shell_command(window, command):
-        pass
-
-    elif handle_file_command(window, norm):
+    elif not _buddy and handle_file_command(window, norm):
         pass
 
     # 2) play something (whole-word match, so "display" / "condition" don't trigger it)
-    elif {"stop", "close", "quit"} & tokens and {"music", "song", "songs", "video", "videos", "player"} & tokens:
+    elif not _buddy and {"stop", "close", "quit"} & tokens and {"music", "song", "songs", "video", "videos", "player"} & tokens:
         stop_player()
         respond(window, "Stopping playback.", "Standby")
 
     # pause / resume / next / previous (our player, or Spotify/VLC/etc. via playerctl)
-    elif handle_media_command(window, norm):
+    elif not _buddy and handle_media_command(window, norm):
         pass
 
-    elif wants_play(norm):
+    elif not _buddy and wants_play(norm):
         song = clean_query(norm)
         if song:
             respond(window, f"Right away. Playing {song}.", "Playing Media...")
@@ -2783,7 +2782,7 @@ def _process_command(command, window):
             open_url_browser("https://www.youtube.com")
 
     # 3) open / search YouTube
-    elif "youtube" in tokens and ({"open", "search", "launch"} & tokens):
+    elif not _buddy and "youtube" in tokens and ({"open", "search", "launch"} & tokens):
         query = clean_query(norm)
         if query:
             respond(window, f"Searching YouTube for {query}.", "Browsing...")
@@ -2794,15 +2793,15 @@ def _process_command(command, window):
             open_url_browser("https://www.youtube.com")
 
     # 3b) search the web (after YouTube so "search ... on youtube" keeps working)
-    elif handle_web_search(window, norm):
+    elif not _buddy and handle_web_search(window, norm):
         pass
 
     # volume / brightness / battery / CPU-RAM-GPU status
-    elif handle_system_command(window, norm):
+    elif not _buddy and handle_system_command(window, norm):
         pass
 
     # 4) open / close ANY installed application (sentence must START with the verb)
-    elif handle_app_command(window, norm):
+    elif not _buddy and handle_app_command(window, norm):
         pass
 
     # 5) instant reply for greetings, pleasantries, time/date
