@@ -2144,6 +2144,10 @@ def handle_voice_command(window, norm, command):
     verbs = {"change", "switch", "use", "turn", "set", "make", "give", "pick", "go"}
     has_verb = bool(verbs & set(words[:5]))
 
+    is_search = bool({"search", "google", "youtube", "play"} & tokens)
+    if is_search:
+        return False
+
     if not has_voice_word and not also_alias:
         return False
     if has_voice_word or has_verb:
@@ -2603,7 +2607,10 @@ class Api:
     def submit_text(self, text):
         text = (text or "").strip()
         if text and WINDOW is not None:
-            threading.Thread(target=process_command, args=(text, WINDOW), daemon=True).start()
+            def _run_text():
+                process_command(text, WINDOW)
+                ui_status(WINDOW, "Standby")
+            threading.Thread(target=_run_text, daemon=True).start()
 
 
 def _cycle_access_worker(window):
